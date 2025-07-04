@@ -26,3 +26,30 @@
 		Main's ddress: 0x5655619d
 	This proves our statement.
 	This technique makes it more difficult to exploit memory corruption vulnerabilities. With random addresses a attacker cannot predict memmory locations.
+
+
+* p2.c
+	This program checks if the password is "foo" and grants access.
+	Running with a few combinations we get:
+		❯ ./p2
+		Enter password: foo
+		Access granted.
+		❯ ./p2
+		Enter password: bar
+		Access denied
+		❯ ./p2
+		Enter password: youshallnotpass
+		Access granted.
+	Access is granted with the wrong password "youshallnotpass" because scanf does not limit the length of the input, so with an input bigger than the size of user_key array, we get a buffer overflow that causes the flaw.
+	To solve this problem, we can limit the length of the input. In this case, we can simply add width to the scanf format.
+	Running the fixed version, we get:
+		❯ ./p2fix
+		Enter password: foo
+		Access granted.
+		❯ ./p2fix
+		Enter password: bar
+		Access denied
+		❯ ./p2fix
+		Enter password: youshallnotpass
+		Access denied
+	As we can see, the vulnerability is fixed.

@@ -16,7 +16,10 @@ p1 : p1.c
 
 p2 : p2.c
 	gcc -Wall -m32  -O0 -fno-stack-protector -fno-pic -fno-pie -Wl,-no-pie $(CFLAGS) -O0 $<  -o $@
-	
+
+p2fix : p2fix.c
+	gcc -Wall -m32  -O0 -fno-stack-protector -fno-pic -fno-pie -Wl,-no-pie $(CFLAGS) -O0 $<  -o $@
+
 p3 : p3.c
 	gcc -Wall -m32  -O0  -fno-pic -fno-pie -Wl,-no-pie $< -o $@
 
