@@ -1,0 +1,28 @@
+* p1.c:
+	The program shows the memory address of its main function. Running it a few times we get: 
+		❯ ./p1
+		Main's ddress: 0x5659519d
+		❯ ./p1
+		Main's ddress: 0x565f619d
+		❯ ./p1
+		Main's ddress: 0x565c119d
+		❯ ./p1
+		Main's ddress: 0x565a919d
+		❯ ./p1
+		Main's ddress: 0x5664b19d
+		❯ ./p1
+		Main's ddress: 0x5659419d
+		❯ ./p1
+		Main's ddress: 0x5660d19d
+		❯ ./p1
+		Main's ddress: 0x565e719d
+	The main's address changes due to randomization of the virtual address space.
+	If we disable it with the flag -R in setarch, we get:
+		❯ setarch x86_64 -R ./p1
+		Main's ddress: 0x5655619d
+		❯ setarch x86_64 -R ./p1
+		Main's ddress: 0x5655619d
+		❯ setarch x86_64 -R ./p1
+		Main's ddress: 0x5655619d
+	This proves our statement.
+	This technique makes it more difficult to exploit memory corruption vulnerabilities. With random addresses a attacker cannot predict memmory locations.
