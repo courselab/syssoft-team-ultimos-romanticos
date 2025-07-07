@@ -149,3 +149,66 @@
 			 80491b7:	0f be c0             	movsbl %al,%eax
 		That moves the value of the 8-bit al register to aex, zero-extending it.
 		The declaration of 'foo' and 'bar' before 'main' are useful for it ro prepare correctly to the functions return.
+
+
+* p4
+	a)
+		Running each program:
+			❯ ./p4-v1
+			Foo
+			❯ ./p4-v2
+			Foo
+			❯ ./p4-v3
+			Foo
+		All produces the same result. But it was necessary to tell the compiler that p4-v3 needs a library that resides in it's origin.
+
+	b)
+		The sizes are:
+			❯ ls | where name =~ p4-v | format filesize B size
+			╭───┬───────┬──────┬─────────┬────────────────╮
+			│ # │ name  │ type │  size   │    modified    │
+			├───┼───────┼──────┼─────────┼────────────────┤
+			│ 0 │ p4-v1 │ file │ 14688 B │ 11 minutes ago │
+			│ 1 │ p4-v2 │ file │ 14648 B │ 11 minutes ago │
+			│ 2 │ p4-v3 │ file │ 14592 B │ 15 minutes ago │
+			╰───┴───────┴──────┴─────────┴────────────────╯
+		p4-v1 (direct object link) is bigger because includes object metadata.
+		p4-v2 (static lib) comes second because only include the static library.
+		p4-v3 (dynamic lib) is the smallest because only include references to the library.
+
+	c)
+		The relevant output of nm for our case is:
+			❯ nm p4-v1
+				000011ee T bar
+				00004000 W data_start
+				000011c3 T foo
+				0000119d T main
+			❯ nm p4-v2
+				00004000 W data_start
+				000011c3 T foo
+				0000119d T main
+			❯ nm p4-v3
+				00004000 W data_start
+				         U foo
+				0000119d T main
+		In p4-v1 both 'bar' and 'foo' are defined symbols (T).
+		In p4-v2 'foo' is a defined symbol. 'bar' is hidden.
+		In p4-v3 'foo' is a undefined (U). 'bar' is hidden.
+
+	d)
+		The diference is that p4-v3 has this line:
+			 0x00000001 (NEEDED)                     Shared library: [libp4.so]
+			 0x00000001 (NEEDED)                     Shared library: [libc.so.6]
+			 0x0000001d (RUNPATH)                    Library runpath: [$ORIGIN]
+		While the others only have:
+			 0x00000001 (NEEDED)                     Shared library: [libc.so.6]
+		This is because all of them needs the dynamic link with the libc, but the p4-v3 also needs to link with the libp4 in that is in it's origin.
+		The kernel use the 'Shared library' field when it reads the ELF header. So passes it to the dynamic linker, who searchs int the library runpath and maps the library in the process memory.
+
+	e)
+		a) installed in other hosts:
+			dynamic libraries needs to be deployed in the host.
+		b) library update:
+			static libraries requires recompilation of the program.
+		c) multiple programs in same host:
+			static libraries causes various copies of the same code. dynamic libraries only needs memory mapping.
