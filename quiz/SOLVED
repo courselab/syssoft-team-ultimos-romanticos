@@ -53,3 +53,99 @@
 		Enter password: youshallnotpass
 		Access denied
 	As we can see, the vulnerability is fixed.
+
+
+* p3
+	'main', 'foo', 'bar' disasembly:
+		0804918d <main>:
+		 804918d:	55                   	push   %ebp
+		 804918e:	89 e5                	mov    %esp,%ebp
+		 8049190:	83 e4 f0             	and    $0xfffffff0,%esp
+		 8049193:	e8 07 00 00 00       	call   804919f <foo>
+		 8049198:	b8 00 00 00 00       	mov    $0x0,%eax
+		 804919d:	c9                   	leave
+		 804919e:	c3                   	ret
+
+		0804919f <foo>:
+		 804919f:	55                   	push   %ebp
+		 80491a0:	89 e5                	mov    %esp,%ebp
+		 80491a2:	83 ec 18             	sub    $0x18,%esp
+		 80491a5:	8b 45 08             	mov    0x8(%ebp),%eax
+		 80491a8:	83 c0 01             	add    $0x1,%eax
+		 80491ab:	83 ec 0c             	sub    $0xc,%esp
+		 80491ae:	50                   	push   %eax
+		 80491af:	e8 0b 00 00 00       	call   80491bf <bar>
+		 80491b4:	83 c4 10             	add    $0x10,%esp
+		 80491b7:	89 45 f4             	mov    %eax,-0xc(%ebp)
+		 80491ba:	8b 45 f4             	mov    -0xc(%ebp),%eax
+		 80491bd:	c9                   	leave
+		 80491be:	c3                   	ret
+
+		080491bf <bar>:
+		 80491bf:	55                   	push   %ebp
+		 80491c0:	89 e5                	mov    %esp,%ebp
+		 80491c2:	83 ec 10             	sub    $0x10,%esp
+		 80491c5:	8b 45 08             	mov    0x8(%ebp),%eax
+		 80491c8:	83 c0 01             	add    $0x1,%eax
+		 80491cb:	89 45 fc             	mov    %eax,-0x4(%ebp)
+		 80491ce:	8b 45 fc             	mov    -0x4(%ebp),%eax
+		 80491d1:	c9                   	leave
+		 80491d2:	c3                   	ret
+	a)
+		'bar' is called in the line:
+			80491af:	e8 0b 00 00 00       	call   80491bf <bar>
+		To pass the parameters to it, 'foo' pushes on the stack in line:
+			 80491ae:	50                   	push   %eax
+		This follows the x86 calling convention.
+		Calling convention is a standarized way of how function exchange data.
+		This is part of a Application Binary Interface, that defines others conventions like the calling convention.
+
+	b)
+		'bar' returns the result to 'foo' in line:
+			 80491ce:	8b 45 fc             	mov    -0x4(%ebp),%eax
+		the eax register is the stardart return register. This is also part of the x86 calling convention, thus it's not a linux-only thing.
+
+	c)
+		the first two are:
+			 804919f:	55                   	push   %ebp
+			 80491a0:	89 e5                	mov    %esp,%ebp
+		the first saves the frame pointer (from the caller) in the stack e the second sets the new frame pointer.
+		This way we can restore the stack frame in the function end. That's exactly what the second-to-last instruction do:
+			 80491bd:	c9                   	leave
+		That can be translated to:
+			mov %ebp,%esp
+			pop %ebp
+		If this instructions were supressed we could have a stack frame corruption.
+		But in leaf functions (who don't need extra stack space), they can be omitted.
+
+	d)
+		This lines are:
+			 80491a2:	83 ec 18             	sub    $0x18,%esp
+		and
+			 80491c2:	83 ec 10             	sub    $0x10,%esp
+		The purpose is to allocate space for local variables in the stack and this is part of the x86 ABI in the sense of preserving the caller stack frame.
+		The third line of 'main' is:
+			 8049190:	83 e4 f0             	and    $0xfffffff0,%esp
+		This one ensures that the stack is 16-byte aligned.
+
+	e)
+		After the modifications foo is now:
+			0804919f <foo>:
+			 804919f:	55                   	push   %ebp
+			 80491a0:	89 e5                	mov    %esp,%ebp
+			 80491a2:	83 ec 18             	sub    $0x18,%esp
+			 80491a5:	8b 45 08             	mov    0x8(%ebp),%eax
+			 80491a8:	83 c0 01             	add    $0x1,%eax
+			 80491ab:	83 ec 0c             	sub    $0xc,%esp
+			 80491ae:	50                   	push   %eax
+			 80491af:	e8 0e 00 00 00       	call   80491c2 <bar>
+			 80491b4:	83 c4 10             	add    $0x10,%esp
+			 80491b7:	0f be c0             	movsbl %al,%eax
+			 80491ba:	89 45 f4             	mov    %eax,-0xc(%ebp)
+			 80491bd:	8b 45 f4             	mov    -0xc(%ebp),%eax
+			 80491c0:	c9                   	leave
+			 80491c1:	c3                   	ret
+		The key change is the line:
+			 80491b7:	0f be c0             	movsbl %al,%eax
+		That moves the value of the 8-bit al register to aex, zero-extending it.
+		The declaration of 'foo' and 'bar' before 'main' are useful for it ro prepare correctly to the functions return.
