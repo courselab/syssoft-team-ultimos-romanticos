@@ -21,7 +21,7 @@ p2fix : p2fix.c
 	gcc -Wall -m32  -O0 -fno-stack-protector -fno-pic -fno-pie -Wl,-no-pie $(CFLAGS) -O0 $<  -o $@
 
 p3 : p3.c
-	gcc -Wall -m32  -O0  -fno-pic -fno-pie -Wl,-no-pie $< -o $@
+	gcc -Wall -m32  -O0 -std=gnu17  -fno-pic -fno-pie -Wl,-no-pie $< -o $@
 
 p4-v1 : p4.o p4a.c p4b.o
 	gcc -m32 $^ -o $@
