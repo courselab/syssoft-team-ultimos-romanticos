@@ -212,3 +212,22 @@
 			static libraries requires recompilation of the program.
 		c) multiple programs in same host:
 			static libraries causes various copies of the same code. dynamic libraries only needs memory mapping.
+
+
+* dyn
+	a) static library
+		Code is copied into the executable.
+		Advantages:
+			No depencencies, easier deployment.
+		Disadvantages:
+			Larger binaries, updates needs recompilation, can have various copies of the same code.
+	b) dynamic library with relocatable code
+		Loaded at runtime with fixed memory addresses. Needs relocation.
+		Advantages:
+			Updatable without recompilation, same code can be shared with other programs.
+		Disadvantages:
+			Doesn't work with ASLR
+	c) dynamic library with position-independent-code
+		Loaded at runtime with relative memory addresses.
+		Advantages:
+			Updatable without recompilation, same code can be shared with other programs, works with ASLR.
